@@ -12,11 +12,10 @@ output:
 ---
 
 ```{r,echo=TRUE}
-terror = read.csv("TerrorData.csv")
+terror2019 = read.csv("TerrorData.csv")
 ```
 
 ```{r,echo=TRUE}
-terror2019 = subset(terror, iyear == 2019)
 terror2019 = terror2019[, c("property", "multiple", "weaptype1", "attacktype1", "imonth", "region")]
 nrow(terror2019)
 terror2019 = terror2019[terror2019$property != -9 & !is.na(terror2019$property),]
