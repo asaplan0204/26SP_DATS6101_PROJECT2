@@ -1,0 +1,147 @@
+---
+title: "Project2-EDA/logit-Aspen"
+author: "Aspen Saplan"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    number_sections: false
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+---
+
+```{r,echo=TRUE}
+terror = read.csv("TerrorData.csv")
+```
+
+```{r,echo=TRUE}
+terror2019 = subset(terror, iyear == 2019)
+terror2019 = terror2019[, c("property", "multiple", "weaptype1", "attacktype1", "imonth", "region")]
+nrow(terror2019)
+terror2019 = terror2019[terror2019$property != -9 & !is.na(terror2019$property),]
+terror2019$property = as.factor(terror2019$property)
+terror2019$multiple = as.factor(terror2019$multiple)
+terror2019$weaptype1 = as.factor(terror2019$weaptype1)
+terror2019$attacktype1 = as.factor(terror2019$attacktype1)
+terror2019$imonth= as.factor(terror2019$imonth)
+terror2019$region = as.factor(terror2019$region)
+str(terror2019)
+```
+```{r,echo=TRUE}
+npd = sum(terror2019$property == 0)
+pd = sum(terror2019$property == 1)
+npd
+pd
+(npd/nrow(terror2019))
+(pd/nrow(terror2019))
+```
+
+```{r,echo=TRUE}
+library(ggplot2)
+ggplot(terror2019, aes(x = multiple, fill = property)) +
+  geom_bar(position = "dodge", color = "black")+
+  scale_fill_manual(values = c(
+    "1" = "purple",
+    "0" = "red"
+  ))+
+  labs(title = "Count of Property Damage by Multiple Attacks",
+    x = "Multiple",
+    y = "Count of Property Damage",
+    fill = "Property Damage")
+```
+
+```{r,echo=TRUE}
+library(ggplot2)
+ggplot(terror2019, aes(x = weaptype1, fill = property)) +
+  geom_bar(position = "dodge", color = "black")+
+  scale_fill_manual(values = c(
+    "1" = "purple",
+    "0" = "red"
+  ))+
+  labs(title = "Count of Property Damage by Weapon Type",
+    x = "Weapon Type",
+    y = "Count of Property Damage",
+    fill = "Property Damage")
+```
+
+```{r,echo=TRUE}
+library(ggplot2)
+ggplot(terror2019, aes(x = attacktype1, fill = property)) +
+  geom_bar(position = "dodge", color = "black")+
+  scale_fill_manual(values = c(
+    "1" = "purple",
+    "0" = "red"
+  ))+
+  labs(title = "Count of Property Damage by Attack Type",
+    x = "Attack Type",
+    y = "Count of Property Damage",
+    fill = "Property Damage")
+```
+
+```{r,echo=TRUE}
+library(ggplot2)
+ggplot(terror2019, aes(x = imonth, fill = property)) +
+  geom_bar(position = "dodge", color = "black")+
+  scale_fill_manual(values = c(
+    "1" = "purple",
+    "0" = "red"
+  ))+
+  labs(title = "Count of Property Damage by Month of Attack",
+    x = "Month",
+    y = "Count of Property Damage",
+    fill = "Property Damage")
+```
+
+```{r,echo=TRUE}
+library(ggplot2)
+ggplot(terror2019, aes(x = region, fill = property)) +
+  geom_bar(position = "dodge", color = "black")+
+  scale_fill_manual(values = c(
+    "1" = "purple",
+    "0" = "red"
+  ))+
+  labs(title = "Count of Property Damage by Region of Attack",
+    x = "Region",
+    y = "Count of Property Damage",
+    fill = "Property Damage")
+```
+
+```{r,echo=TRUE}
+library(ezids)
+contableM = table(terror2019$property, terror2019$multiple)
+xkabledply(contableM, title="Contingency table for property and multiple within dataset")
+chitestM = chisq.test(contableM)
+chitestM
+```
+
+```{r,echo=TRUE}
+library(ezids)
+contableW = table(terror2019$property, terror2019$weaptype1)
+xkabledply(contableW, title="Contingency table for property and weapon type within dataset")
+chitestW = chisq.test(contableW)
+chitestW
+```
+```{r,echo=TRUE}
+library(ezids)
+contableA = table(terror2019$property, terror2019$attacktype1)
+xkabledply(contableA, title="Contingency table for property and attack type within dataset")
+chitestA = chisq.test(contableA)
+chitestA
+```
+
+```{r,echo=TRUE}
+library(ezids)
+contableMO = table(terror2019$property, terror2019$imonth)
+xkabledply(contableMO, title="Contingency table for property and month of attack within dataset")
+chitestMO = chisq.test(contableMO)
+chitestMO
+```
+
+```{r,echo=TRUE}
+library(ezids)
+contableR = table(terror2019$property, terror2019$region)
+xkabledply(contableR, title="Contingency table for property and region of attack within dataset")
+chitestR = chisq.test(contableR)
+chitestR
+```
