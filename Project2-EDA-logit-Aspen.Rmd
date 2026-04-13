@@ -13,11 +13,7 @@ output:
 
 ```{r,echo=TRUE}
 terror2019 = read.csv("TerrorData.csv")
-```
-
-```{r,echo=TRUE}
 terror2019 = terror2019[, c("property", "multiple", "weaptype1", "attacktype1", "imonth", "region")]
-nrow(terror2019)
 terror2019 = terror2019[terror2019$property != -9 & !is.na(terror2019$property),]
 terror2019$property = as.factor(terror2019$property)
 terror2019$multiple = as.factor(terror2019$multiple)
@@ -27,14 +23,40 @@ terror2019$imonth= as.factor(terror2019$imonth)
 terror2019$region = as.factor(terror2019$region)
 str(terror2019)
 ```
+
+
+Number of records in 2019 with either property damage or no property damage:
+
+```{r,echo=TRUE}
+total = nrow(terror2019)
+total
+```
+
+Number of records in 2019 without property damage:
+
 ```{r,echo=TRUE}
 npd = sum(terror2019$property == 0)
-pd = sum(terror2019$property == 1)
 npd
-pd
-(npd/nrow(terror2019))
-(pd/nrow(terror2019))
 ```
+
+Number of records in 2019 with property damage:
+
+```{r,echo=TRUE}
+pd = sum(terror2019$property == 1)
+pd
+```
+
+Percentage of records without property damage:
+
+```{r,echo=TRUE}
+(npd/total)
+```
+
+Percentage of records with property damage:
+```{r,echo=TRUE}
+(pd/total)
+```
+
 
 ```{r,echo=TRUE}
 library(ggplot2)
@@ -106,6 +128,12 @@ ggplot(terror2019, aes(x = region, fill = property)) +
     fill = "Property Damage")
 ```
 
+Null Hypothesis: Multiple attacks and property damage are independent
+
+Alternative Hypothesis: Multiple attacks and property damage are not independent
+
+Alpha: 0.05
+
 ```{r,echo=TRUE}
 library(ezids)
 contableM = table(terror2019$property, terror2019$multiple)
@@ -114,6 +142,12 @@ chitestM = chisq.test(contableM)
 chitestM
 ```
 
+Null Hypothesis: Weapon type and property damage are independent
+
+Alternative Hypothesis: Weapon type and property damage are not independent
+
+Alpha: 0.05
+
 ```{r,echo=TRUE}
 library(ezids)
 contableW = table(terror2019$property, terror2019$weaptype1)
@@ -121,6 +155,13 @@ xkabledply(contableW, title="Contingency table for property and weapon type with
 chitestW = chisq.test(contableW)
 chitestW
 ```
+
+Null Hypothesis: Attack type and property damage are independent
+
+Alternative Hypothesis: Attack type and property damage are not independent
+
+Alpha: 0.05
+
 ```{r,echo=TRUE}
 library(ezids)
 contableA = table(terror2019$property, terror2019$attacktype1)
@@ -129,6 +170,12 @@ chitestA = chisq.test(contableA)
 chitestA
 ```
 
+Null Hypothesis: Month of attack and property damage are independent
+
+Alternative Hypothesis: Month of attack and property damage are not independent
+
+Alpha: 0.05
+
 ```{r,echo=TRUE}
 library(ezids)
 contableMO = table(terror2019$property, terror2019$imonth)
@@ -136,6 +183,12 @@ xkabledply(contableMO, title="Contingency table for property and month of attack
 chitestMO = chisq.test(contableMO)
 chitestMO
 ```
+
+Null Hypothesis: Region of attack and property damage are independent
+
+Alternative Hypothesis: Region of attack and property damage are not independent
+
+Alpha: 0.05
 
 ```{r,echo=TRUE}
 library(ezids)
