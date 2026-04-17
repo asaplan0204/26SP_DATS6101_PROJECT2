@@ -197,3 +197,88 @@ xkabledply(contableR, title="Contingency table for property and region of attack
 chitestR = chisq.test(contableR)
 chitestR
 ```
+
+```{r,echo=TRUE}
+library(stats)
+model1 = glm(property ~ multiple + attacktype1 + imonth + region + weaptype1, data = terror2019, family = binomial)
+summary(model1)
+```
+
+```{r,echo=TRUE}
+probs = predict(model1, type = "response")
+pred = ifelse(probs > 0.5, 1, 0)
+table(Predicted = pred, Actual= terror2019$property)
+mean(pred == terror2019$property)
+```
+```{r,echo=TRUE}
+library(pROC)
+probs = predict(model1, type = "response")
+r = roc(terror2019$property, probs)
+plot(r)
+auc(r)
+best <- coords(r, "best", ret = c("threshold", "sensitivity", "specificity"), best.method = "youden")
+best
+```
+
+```{r,echo=TRUE}
+p1 = pchisq(8958.7 - 7069.4, df = 40, lower.tail = FALSE)
+p1
+```
+
+```{r,echo=TRUE}
+library(stats)
+model2 = glm(property ~ multiple + attacktype1 + imonth, data = terror2019, family = binomial)
+summary(model2)
+```
+
+```{r,echo=TRUE}
+probs1 = predict(model2, type = "response")
+pred1 = ifelse(probs1 > 0.5, 1, 0)
+table(Predicted = pred1, Actual= terror2019$property)
+mean(pred1 == terror2019$property)
+```
+```{r,echo=TRUE}
+library(pROC)
+probs1 = predict(model2, type = "response")
+r = roc(terror2019$property, probs1)
+plot(r)
+auc(r)
+best <- coords(r, "best", ret = c("threshold", "sensitivity", "specificity"), best.method = "youden")
+best
+```
+
+```{r,echo=TRUE}
+p1 = pchisq(8958.7 - 7616.2, df = 20, lower.tail = FALSE)
+p1
+```
+
+```{r,echo=TRUE}
+exp(coef(model2))
+```
+comparison model
+```{r,echo=TRUE}
+library(stats)
+model3 = glm(property ~ multiple + attacktype1, data = terror2019, family = binomial)
+summary(model3)
+```
+```{r,echo=TRUE}
+probs2 = predict(model3, type = "response")
+pred2 = ifelse(probs2 > 0.5, 1, 0)
+table(Predicted = pred2, Actual= terror2019$property)
+mean(pred2 == terror2019$property)
+```
+
+```{r,echo=TRUE}
+library(pROC)
+probs2 = predict(model3, type = "response")
+r = roc(terror2019$property, probs2)
+plot(r)
+auc(r)
+best <- coords(r, "best", ret = c("threshold", "sensitivity", "specificity"), best.method = "youden")
+best
+```
+
+```{r,echo=TRUE}
+p2 = pchisq(8958.7 - 7664.5, df = 11, lower.tail = FALSE)
+p2
+```
