@@ -72,11 +72,6 @@ t.test(n_attacks ~ period, data = attacks_per_year)
 Plots are created here by grouping attacks in each year and seeing how the frequency of these attaks change over time. a line plot is created to show how the number of attacks changes over time. a boxplot is created to show the frequency of attacks pre and post 2001 or 9/11
 
 
-#################################################
-# 5. TWO-VARIABLE GRAPHICS (REQUIRED)
-#################################################
-
-
 ```{r}
 # Scatterplot: casualties vs year
 ggplot(Terror, aes(x = iyear, y = casualties)) +
@@ -91,9 +86,6 @@ cor(numeric_vars, use="complete.obs")
 This step involves two-variable graphics to examine the relationships in the data. To determine whether the intensity of attacks varies with time a scatterplot of year vs casualties is plotted. The numeric variables are also correlated to one another, so that you can learn whether or not the variables move together, and whether there are any strong linear associations among them.
 
 
-#################################################
-# 6. GLM (REGRESSION)
-#################################################
 ```{r}
 model_full <- lm(log_casualties ~ iyear + attacktype1_txt + region_txt + period,
                  data = Terror)
@@ -104,22 +96,12 @@ summary(model_full)
 A regression model is then constructed to describe the severity of attacks using the script. In this model, the dependent variable will be the log-transformed number of casualties, with the predictors being year, type of attack, region and period. This enables you to test the relationship between that and the other factors in the model and the other factors that are associated with more severe attacks.
 
 
-#################################################
-# 7. FEATURE SELECTION (IMPORTANT)
-#################################################
-
-
 ```{r}
 model_step <- stepAIC(model_full, direction = "both")
 
 summary(model_step)
 ```
 Once the entire regression model has been fitted, the script will select features by relying on stepAIC. The process eliminates variables which do not contribute to the model to the extent desired and retains the combination of predictors which offers the best tradeoff between model fit and simplicity. This is useful in creating a model that is less complicated and can be more efficient.
-
-
-#################################################
-# 8. MODEL EVALUATION
-#################################################
 
 
 ```{r}
@@ -136,19 +118,12 @@ anova(model_step)
 After the last model has been selected, the script analyses the performance of the model. It analyzes the value of the R-squared and adjusted R-squared to understand the extent of the variation in the severity of the attack explained by the model. It also compares ANOVA output to determine the significance of the terms fitted in the model.
 
 ```{r}
-#################################################
-# 9. MODEL DIAGNOSTICS 
-#################################################
-
 par(mfrow=c(1,1))
 plot(model_step)
 ```
 
 Improper assumptions of the regression model are then verified using the regression model on the basis of diagnostic plots. These plots assist you to observe whether or not the residual values are approximately normal, the variance is reasonably constant, and whether there are influential points that may substantially affect the outcomes. This is significant in the sense that when the assumptions of the regression are moderately satisfied, the conclusions of the regression are more trustworthy.
 
-#################################################
-# 10. SECOND MODEL (PROPERTY DAMAGE)
-#################################################
 ```{r}
 model_prop <- lm(log_prop ~ iyear + attacktype1_txt + region_txt + period,
                  data = Terror)
@@ -158,10 +133,6 @@ summary(model_prop)
 
 The script then makes a second regression model with log-transformed property damage as a dependent variable. The reason behind this is that the severity that your project is gauging on is not only based on casualties, but also on property damages, which is the second outcome. This model assists in determining what variables are related to more harmful attacks in terms of property damage.
 
-
-#################################################
-# 11. DECISION TREE (OPTIONAL BUT STRONG)
-#################################################
 ```{r}
 tree_model <- rpart(log_casualties ~ iyear + attacktype1_txt + region_txt + period,
                     data = Terror,
@@ -171,9 +142,6 @@ rpart.plot(tree_model)
 ```
 A decision tree model of casualties is also provided in the script. A decision tree is more flexible in capturing nonlinear patterns and interactions than linear regression. This provides you another modeling method to contrast the regression results and makes your project stronger in the technical aspect.
 
-#################################################
-# 12. CHI-SQUARE TESTS
-#################################################
 ```{r}
 chisq.test(table(Terror$attacktype1_txt, Terror$period))
 chisq.test(table(Terror$region_txt, Terror$period))
