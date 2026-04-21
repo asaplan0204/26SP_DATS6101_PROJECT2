@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align =
 
 ## Introduction
 
-The Global Terrorism Database (GTD) records terrorist attacks worldwide from 1970 to 2020. This analysis focuses on **2019** and investigates what factors influence whether a terrorist attack is **successful or not**. According to the GTD codebook, the `success` variable is coded as `1` if the attack achieved its intended effect (e.g., bomb detonated, hostage taken, target killed), and `0` otherwise. This is distinct from strategic success ??? it measures tactical completion.
+The Global Terrorism Database (GTD) records terrorist attacks worldwide from 1970 to 2020. This analysis focuses on **2019** and investigates what factors influence whether a terrorist attack is **successful or not**. According to the GTD codebook, the `success` variable is coded as `1` if the attack achieved its intended effect (e.g., bomb detonated, hostage taken, target killed), and `0` otherwise. This is distinct from strategic success it measures tactical completion.
 
 We examine the following predictor variables:
 
@@ -394,33 +394,33 @@ model1 <- glm(success ~ attacktype1 + weaptype1 + targtype1 + region + suicide +
               data = terror2019, family = binomial)
 ```
 
-**Table 8: Coefficients, Odds Ratios, and 95% CI ??? Model 1**
+**Table 8: Coefficients, Odds Ratios, and 95% CI  Model 1**
 
 ```{r model1-coeftable, results='asis'}
-coef_table(model1, title = "Table 8: Model 1 ??? Coefficients, OR, and 95% CI")
+coef_table(model1, title = "Table 8: Model 1  Coefficients, OR, and 95% CI")
 ```
 
-**Confusion Matrix and Performance Metrics ??? Model 1:**
+**Confusion Matrix and Performance Metrics  Model 1:**
 
 ```{r model1-confusion}
 probs1 <- predict(model1, type = "response")
 pred1  <- ifelse(probs1 > 0.5, 1, 0)
 cm1    <- table(Predicted = pred1, Actual = terror2019$success)
-xkabledply(cm1, title = "Confusion Matrix ??? Model 1")
+xkabledply(cm1, title = "Confusion Matrix  Model 1")
 metrics1 <- conf_metrics(pred1, terror2019$success, "Model 1 (Full)")
-kable(metrics1, caption = "Table 9: Performance Metrics ??? Model 1") %>%
+kable(metrics1, caption = "Table 9: Performance Metrics  Model 1") %>%
   kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
 ```
 
-**ROC Curve and AUC ??? Model 1:**
+**ROC Curve and AUC  Model 1:**
 
 ```{r model1-roc}
 roc1  <- roc(terror2019$success, probs1)
-plot(roc1, main = "Figure 7: ROC Curve ??? Model 1 (Full Model)")
+plot(roc1, main = "Figure 7: ROC Curve  Model 1 (Full Model)")
 best1 <- coords(roc1, "best", ret = c("threshold", "sensitivity", "specificity"),
                 best.method = "youden")
 kable(as.data.frame(best1), digits = 4,
-      caption = "Table 10: Best Threshold (Youden) ??? Model 1") %>%
+      caption = "Table 10: Best Threshold (Youden)  Model 1") %>%
   kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
 cat("AUC Model 1:", round(auc(roc1), 4), "\n")
 ```
@@ -434,33 +434,33 @@ model2 <- glm(success ~ attacktype1 + weaptype1 + region + suicide,
               data = terror2019, family = binomial)
 ```
 
-**Table 11: Coefficients, Odds Ratios, and 95% CI ??? Model 2**
+**Table 11: Coefficients, Odds Ratios, and 95% CI  Model 2**
 
 ```{r model2-coeftable, results='asis'}
-coef_table(model2, title = "Table 11: Model 2 ??? Coefficients, OR, and 95% CI")
+coef_table(model2, title = "Table 11: Model 2  Coefficients, OR, and 95% CI")
 ```
 
-**Confusion Matrix and Performance Metrics ??? Model 2:**
+**Confusion Matrix and Performance Metrics  Model 2:**
 
 ```{r model2-confusion}
 probs2 <- predict(model2, type = "response")
 pred2  <- ifelse(probs2 > 0.5, 1, 0)
 cm2    <- table(Predicted = pred2, Actual = terror2019$success)
-xkabledply(cm2, title = "Confusion Matrix ??? Model 2")
+xkabledply(cm2, title = "Confusion Matrix  Model 2")
 metrics2 <- conf_metrics(pred2, terror2019$success, "Model 2 (Reduced)")
-kable(metrics2, caption = "Table 12: Performance Metrics ??? Model 2") %>%
+kable(metrics2, caption = "Table 12: Performance Metrics Model 2") %>%
   kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
 ```
 
-**ROC Curve and AUC ??? Model 2:**
+**ROC Curve and AUC Model 2:**
 
 ```{r model2-roc}
 roc2  <- roc(terror2019$success, probs2)
-plot(roc2, main = "Figure 8: ROC Curve ??? Model 2 (Reduced Model)")
+plot(roc2, main = "Figure 8: ROC Curve Model 2 (Reduced Model)")
 best2 <- coords(roc2, "best", ret = c("threshold", "sensitivity", "specificity"),
                 best.method = "youden")
 kable(as.data.frame(best2), digits = 4,
-      caption = "Table 13: Best Threshold (Youden) ??? Model 2") %>%
+      caption = "Table 13: Best Threshold (Youden) Model 2") %>%
   kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
 cat("AUC Model 2:", round(auc(roc2), 4), "\n")
 ```
@@ -474,33 +474,33 @@ model3 <- glm(success ~ attacktype1 + suicide,
               data = terror2019, family = binomial)
 ```
 
-**Table 14: Coefficients, Odds Ratios, and 95% CI ??? Model 3**
+**Table 14: Coefficients, Odds Ratios, and 95% CI Model 3**
 
 ```{r model3-coeftable, results='asis'}
-coef_table(model3, title = "Table 14: Model 3 ??? Coefficients, OR, and 95% CI")
+coef_table(model3, title = "Table 14: Model 3 Coefficients, OR, and 95% CI")
 ```
 
-**Confusion Matrix and Performance Metrics ??? Model 3:**
+**Confusion Matrix and Performance Metrics Model 3:**
 
 ```{r model3-confusion}
 probs3 <- predict(model3, type = "response")
 pred3  <- ifelse(probs3 > 0.5, 1, 0)
 cm3    <- table(Predicted = pred3, Actual = terror2019$success)
-xkabledply(cm3, title = "Confusion Matrix ??? Model 3")
+xkabledply(cm3, title = "Confusion Matrix Model 3")
 metrics3 <- conf_metrics(pred3, terror2019$success, "Model 3 (Minimal)")
-kable(metrics3, caption = "Table 15: Performance Metrics ??? Model 3") %>%
+kable(metrics3, caption = "Table 15: Performance Metrics Model 3") %>%
   kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
 ```
 
-**ROC Curve and AUC ??? Model 3:**
+**ROC Curve and AUC Model 3:**
 
 ```{r model3-roc}
 roc3  <- roc(terror2019$success, probs3)
-plot(roc3, main = "Figure 9: ROC Curve ??? Model 3 (Minimal Model)")
+plot(roc3, main = "Figure 9: ROC Curve Model 3 (Minimal Model)")
 best3 <- coords(roc3, "best", ret = c("threshold", "sensitivity", "specificity"),
                 best.method = "youden")
 kable(as.data.frame(best3), digits = 4,
-      caption = "Table 16: Best Threshold (Youden) ??? Model 3") %>%
+      caption = "Table 16: Best Threshold (Youden) Model 3") %>%
   kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
 cat("AUC Model 3:", round(auc(roc3), 4), "\n")
 ```
@@ -542,7 +542,7 @@ lrt_table <- data.frame(
   p_value            = round(c(p_m1, p_m2, p_m3, p_m1_m2, p_m2_m3), 6)
 )
 
-kable(lrt_table, caption = "Table 17: Likelihood Ratio Tests ??? Model Comparisons") %>%
+kable(lrt_table, caption = "Table 17: Likelihood Ratio Tests Model Comparisons") %>%
   kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
 ```
 
@@ -562,7 +562,7 @@ all_metrics$Resid_Deviance <- round(c(model1$deviance,
                                        model3$deviance), 2)
 
 kable(all_metrics,
-      caption = "Table 18: Full Model Comparison ??? Accuracy, AUC, AIC, Deviance") %>%
+      caption = "Table 18: Full Model Comparison Accuracy, AUC, AIC, Deviance") %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
                 full_width = FALSE) %>%
   column_spec(2:8, bold = FALSE) %>%
@@ -573,7 +573,7 @@ The highlighted row indicates the best-performing model by AUC.
 
 ---
 
-## 6. Odds Ratios ??? Best Model
+## 6. Odds Ratios Best Model
 
 Based on AUC, AIC, and the likelihood ratio tests, we interpret odds ratios with 95% confidence intervals for the best-performing model (Model 2).
 
@@ -590,7 +590,7 @@ or_df <- data.frame(
 )
 rownames(or_df) <- NULL
 
-kable(or_df, caption = "Table 19: Odds Ratios with 95% CI ??? Model 2 (Best Model)") %>%
+kable(or_df, caption = "Table 19: Odds Ratios with 95% CI Model 2 (Best Model)") %>%
   kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE) %>%
   row_spec(which(or_df$OR > 1 & or_df$CI_lower_95 > 1), background = "#d4edda") %>%
   row_spec(which(or_df$OR < 1 & or_df$CI_upper_95 < 1), background = "#f8d7da")
@@ -602,9 +602,11 @@ Rows highlighted in **green** indicate predictors that significantly *increase* 
 
 ## 7. Conclusions
 
-Based on the 2019 GTD data (`r nrow(terror2019)` attacks), the chi-square tests indicate that **all six predictors** ??? attack type, weapon type, target type, region, suicide status, and whether the attack was part of a multiple incident ??? are statistically associated with attack success (all p-values < 0.05).
+Based on the 2019 GTD data (`r nrow(terror2019)` attacks), the chi-square tests indicate that **all six predictors**  attack type, weapon type, target type, region, suicide status, and whether the attack was part of a multiple incident  are statistically associated with attack success (all p-values < 0.05).
 
 The logistic regression models confirm that **attack type** is the strongest and most consistent predictor of success. Suicide attacks are significantly more likely to succeed than non-suicide attacks, consistent with the attacker's commitment to completion. Region and weapon type also contribute meaningful predictive power, while target type and multiple incident status add less once other variables are controlled for.
 
 Model 2 (attack type + weapon type + region + suicide) offers the best balance of fit and parsimony, with competitive AUC and accuracy relative to the full model.
 ```
+
+
