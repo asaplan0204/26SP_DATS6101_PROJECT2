@@ -136,6 +136,8 @@ Multiple attacks variable represents if the record was one singular terrorist at
 
 ```{r,echo=TRUE}
 terror2019 = read.csv("TerrorData.csv")
+# If other datasets are used and include more than years 2019
+# terror2019 = terror2019[terror2019$iyear == 2019, ]
 terror2019 = terror2019[, c("property", "multiple", "weaptype1", "attacktype1", "imonth", "region")]
 terror2019 = terror2019[terror2019$property != -9 & !is.na(terror2019$property),]
 terror2019$property = as.factor(terror2019$property)

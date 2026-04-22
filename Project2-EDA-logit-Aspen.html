@@ -1891,6 +1891,8 @@ variables are of the type categorical variable, so the first thing that
 must be done is as factoring them so that r studio can represent them
 correctly.</p>
 <pre class="r"><code>terror2019 = read.csv(&quot;TerrorData.csv&quot;)
+# If other datasets are used and include more than years 2019
+# terror2019 = terror2019[terror2019$iyear == 2019, ]
 terror2019 = terror2019[, c(&quot;property&quot;, &quot;multiple&quot;, &quot;weaptype1&quot;, &quot;attacktype1&quot;, &quot;imonth&quot;, &quot;region&quot;)]
 terror2019 = terror2019[terror2019$property != -9 &amp; !is.na(terror2019$property),]
 terror2019$property = as.factor(terror2019$property)
