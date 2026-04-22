@@ -11,7 +11,7 @@ output:
     toc_float: yes
 ---
 
-# How does multiple attacks, weapon type, attack type, month of attack, or region of attack influence whether a terrorist attack causes property damage?
+# How does multiple attacks, weapon type, attack type, month of attack, or region of attack influence whether a terrorist attack causes property damage in 2019?
 
 ## Author of this section: Aspen Saplan
 
@@ -414,8 +414,8 @@ best
 ### Deviance:
 
 ```{r,echo=TRUE}
-p1 = pchisq(8958.7 - 7616.2, df = 20, lower.tail = FALSE)
-p1
+p2 = pchisq(8958.7 - 7616.2, df = 20, lower.tail = FALSE)
+p2
 ```
 
 Through different testing of plugging and chugging different sets of independent variables, model two is the one that showed the best results while also not being overfitted with data.  The variables that were chosen to be left in as covariates include multiple, attack type, and month variables.  This produced a model that has an aic of 7658.2, which was lower than any other model that was tested on.  Model two has an accuracy of about sixty seven point two percent.  Model two’s auc is about seventy three percent.  While model two’s deviance is less than 0.05, but not exactly zero indicating that it is statistically better than the null and saturated models and that it is not overfitting the data. 
