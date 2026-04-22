@@ -135,7 +135,7 @@ output:
 Multiple attacks variable represents if the record was one singular terrorist attack or if there were multiple combined that represent one terrorist attack.  The weapon type variable represents what type of weapon was used to perform the terrorist attack.  The month of attack variable represents what month the terrorist attack occurred in.  The region variable represents the region that the terrorist attack took place in.  The property variable is the dependent variable that will be examined and represents whether there was property damage or there was no property damage caused by this terrorist attack.  All of these variables are of the type categorical variable, so the first thing that must be done is as factoring them so that r studio can represent them correctly.  
 
 ```{r,echo=TRUE}
-terror2019 = read.csv("TerrorData.csv")
+terror2019 = read.csv("TerrorData-2019.csv")
 # If other datasets are used and include more than years 2019
 # terror2019 = terror2019[terror2019$iyear == 2019, ]
 terror2019 = terror2019[, c("property", "multiple", "weaptype1", "attacktype1", "imonth", "region")]
