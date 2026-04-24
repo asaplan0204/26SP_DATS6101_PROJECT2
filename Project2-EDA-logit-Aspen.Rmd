@@ -470,7 +470,7 @@ p2 = pchisq(8958.7 - 7664.5, df = 11, lower.tail = FALSE)
 p2
 ```
 
-The inclusion of this third model is just to give a comparison of why model two was selected as the best model.  Model 2 has a better predictive accuracy than model 3.  Model 2 also has a lower aic than model 3 indicating a better goodness of fit test score.  Model 2 also has a higher auc than model 3 indicating that model 2 is better at distinguishing the different cases than model 3.
+The inclusion of this third model is just to give a comparison of why model two was selected as the best model.  Model 2 has a better predictive accuracy than model 3.  Model 2 also has a lower aic than model 3 indicating it is a better model even with model 2 getting penalized for having more independent variables.  Model 2 also has a higher auc than model 3 indicating that model 2 is better at distinguishing the different cases than model 3.
 
 ## Conclusion:
 
