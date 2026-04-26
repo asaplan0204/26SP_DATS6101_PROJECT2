@@ -512,7 +512,7 @@ p2 = pchisq(8958.7 - 7616.2, df = 20, lower.tail = FALSE)
 p2
 ```
 
-Through different testing of plugging and chugging different sets of independent variables, model two is the one that showed the best results while also not being overfitted with data.  The variables that were chosen to be left in as covariates include multiple, attack type, and month variables.  This produced a model that has an aic of 7658.2, which was lower than any other model that was tested on.  Model two has an accuracy of about sixty seven point two percent.  Model two’s auc is about seventy three percent.  While model two’s deviance is less than 0.05, but not exactly zero indicating that it is statistically better than the null and saturated models and that it is not overfitting the data. 
+Through different testing of plugging and chugging different sets of independent variables, model two is the one that showed the best results while also not being overfitted with data.  The variables that were chosen to be left in as covariates include multiple, attack type, and month variables.  This produced a model that has an aic of 7658.2, which was lower than any other model that was tested on.  Model two has an accuracy of about sixty seven point two percent.  Model two???s auc is about seventy three percent.  While model two???s deviance is less than 0.05, but not exactly zero indicating that it is statistically better than the null and saturated models and that it is not overfitting the data. 
 
 Looking at each covariate it can be seen that not every type within a covariate is statistically significant.  One example being that attack type three, four, five, six, seven and nine are statistically significant when compared to attack type one.  However, attack type two and eight are not statistically significant compared to attack type one.  Also, only month two, four, and twelve have statistical significance when compared to month one for this logistic regression model.
 
@@ -722,4 +722,754 @@ chisq.test(table(Terror$region_txt, Terror$period))
 
 Lastly, chi-square tests are employed in the script to examine the change in categorical patterns with time. One chi-square test is used to test whether the distribution of attacks type differs between the pre-2001 and the post-2001 period, and another one to test whether the regional distribution of attacks varies across the period. These tests are useful in ascertaining whether patterns of terrorism changed in terms of structure following 9/11, and not merely in terms of frequency or intensity.
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+
+author of the section Pablo Dragnic
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align = "center")
+```
+
+## Introduction
+
+The Global Terrorism Database (GTD) records terrorist attacks worldwide from 1970 to 2020. This analysis focuses on **2019** and investigates what factors influence whether a terrorist attack is **successful or not**. According to the GTD codebook, the `success` variable is coded as `1` if the attack achieved its intended effect (e.g., bomb detonated, hostage taken, target killed), and `0` otherwise. This is distinct from strategic success ??? it measures tactical completion.
+
+We examine the following predictor variables:
+
+- **Attack type** (`attacktype1`)
+- **Weapon type** (`weaptype1`)
+- **Target type** (`targtype1`)
+- **Region** (`region`)
+- **Suicide attack** (`suicide`)
+- **Part of multiple incident** (`multiple`)
+
+We use EDA, chi-square tests, and logistic regression to answer the research question.
+
+---
+
+## 1. Data Loading and Preparation
+
+## Variable Key:
+
+#### Success:
+
+0 = No (Attack was not tactically successful)
+
+1 = Yes (Attack achieved its intended effect)
+
+#### AttackType1:
+
+1 = Assassination
+
+2 = Armed Assault
+
+3 = Bombing/Explosion
+
+4 = Hijacking
+
+5 = Hostage Taking (Barricade Incident)
+
+6 = Hostage Taking (Kidnapping)
+
+7 = Facility/Infrastructure Attack
+
+8 = Unarmed Assault
+
+9 = Unknown
+
+#### WeaponType1:
+
+1 = Biological
+
+2 = Chemical
+
+5 = Firearms
+
+6 = Explosives
+
+8 = Incendiary
+
+9 = Melee
+
+10 = Vehicle
+
+11 = Sabotage Equipment
+
+12 = Other
+
+13 = Unknown
+
+#### Region:
+
+1 = North America
+
+2 = Central America & Caribbean
+
+3 = South America
+
+4 = East Asia
+
+5 = Southeast Asia
+
+6 = South Asia
+
+7 = Central Asia
+
+8 = Western Europe
+
+9 = Eastern Europe
+
+10 = Middle East & North Africa
+
+11 = Sub-Saharan Africa
+
+12 = Australasia & Oceania
+
+#### Suicide:
+
+0 = No
+
+1 = Yes
+
+#### Multiple:
+
+0 = No (Single incident)
+
+1 = Yes (Part of coordinated multiple incident)
+
+```{r load-data}
+library(ggplot2)
+library(ezids)
+library(pROC)
+library(dplyr)
+library(knitr)
+
+# Set working directory to wherever this .Rmd file lives (works for all team members)
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+
+# Load dataset (already filtered to 2019)
+gtd_full <- read.csv("TerrorData-2019.csv")
+terror2019 <- gtd_full
+
+# Select relevant columns
+terror2019 <- terror2019[, c("success", "attacktype1", "weaptype1", "targtype1",
+                              "region", "suicide", "multiple")]
+
+# Convert to factors (numeric codes kept for models)
+terror2019$success     <- as.factor(terror2019$success)
+terror2019$attacktype1 <- as.factor(terror2019$attacktype1)
+terror2019$weaptype1   <- as.factor(terror2019$weaptype1)
+terror2019$targtype1   <- as.factor(terror2019$targtype1)
+terror2019$region      <- as.factor(terror2019$region)
+terror2019$suicide     <- as.factor(terror2019$suicide)
+terror2019$multiple    <- as.factor(terror2019$multiple)
+
+# Labeled versions for readable plots
+attack_labels <- c("1"="Assassination","2"="Armed Assault","3"="Bombing/Explosion",
+                   "4"="Hijacking","5"="Barricade Incident","6"="Kidnapping",
+                   "7"="Facility Attack","8"="Unarmed Assault","9"="Unknown")
+weapon_labels <- c("1"="Biological","2"="Chemical","5"="Firearms","6"="Explosives",
+                   "8"="Incendiary","9"="Melee","10"="Vehicle","11"="Sabotage",
+                   "12"="Other","13"="Unknown")
+region_labels <- c("1"="North America","2"="Cent. America & Caribbean",
+                   "3"="South America","4"="East Asia","5"="Southeast Asia",
+                   "6"="South Asia","7"="Central Asia","8"="Western Europe",
+                   "9"="Eastern Europe","10"="Middle East & N. Africa",
+                   "11"="Sub-Saharan Africa","12"="Australasia & Oceania")
+targ_labels   <- c("1"="Business","2"="Government (General)","3"="Police",
+                   "4"="Military","5"="Abortion Related","6"="Airports & Aircraft",
+                   "7"="Government (Diplomatic)","8"="Educational Institution",
+                   "9"="Food/Water Supply","10"="Journalists & Media",
+                   "11"="Maritime","12"="NGO","13"="Other",
+                   "14"="Private Citizens","15"="Religious","16"="Telecom",
+                   "17"="Terrorists/Militias","18"="Tourists",
+                   "19"="Transportation","20"="Unknown","21"="Utilities",
+                   "22"="Violent Political Parties")
+
+terror2019$attack_lbl <- attack_labels[as.character(terror2019$attacktype1)]
+terror2019$weapon_lbl <- weapon_labels[as.character(terror2019$weaptype1)]
+terror2019$region_lbl <- region_labels[as.character(terror2019$region)]
+terror2019$targ_lbl   <- targ_labels[as.character(terror2019$targtype1)]
+
+str(terror2019)
+```
+
+The dataset is filtered to 2019 attacks only and narrowed to the seven variables of interest. All predictors and the outcome are converted to factors so that R treats them as categorical rather than continuous numeric values ??? this is important for logistic regression because it ensures each category gets its own dummy variable rather than being treated as an ordered scale. Human-readable label vectors are also merged onto the data frame for use in the plots, since the raw numeric codes from the GTD are not self-explanatory on their own.
+
+---
+
+## 2. Exploratory Data Analysis
+
+### 2.1 Overall Success Rate
+
+The first thing to examine is how balanced the outcome variable is. This matters because a heavily imbalanced outcome can make model accuracy misleading ??? a model that always predicts the majority class would look accurate without actually learning anything.
+
+```{r overall-success}
+total    <- nrow(terror2019)
+n_succ   <- sum(terror2019$success == 1)
+n_unsucc <- sum(terror2019$success == 0)
+
+cat("Total attacks in 2019:", total, "\n")
+cat("Successful attacks:", n_succ, "(", round(n_succ/total*100, 1), "%)\n")
+cat("Unsuccessful attacks:", n_unsucc, "(", round(n_unsucc/total*100, 1), "%)\n")
+```
+
+In 2019, the vast majority of recorded attacks were successful. The `success` variable is imbalanced, which we will keep in mind when interpreting model results. Because there are far more successes than failures in the data, a naive model that always predicts "successful" would achieve high accuracy without any real discriminatory ability. This means we will rely on AUC, sensitivity, and specificity rather than accuracy alone when evaluating and comparing models.
+
+```{r overall-plot}
+ggplot(terror2019, aes(x = success, fill = success)) +
+  geom_bar(color = "black", width = 0.5) +
+  geom_text(stat = "count", aes(label = ..count..), vjust = -0.5, size = 4) +
+  scale_fill_manual(values = c("0" = "#d9534f", "1" = "#5cb85c"),
+                    labels = c("Unsuccessful", "Successful")) +
+  scale_x_discrete(labels = c("0" = "Unsuccessful", "1" = "Successful")) +
+  labs(title = "Figure 1: Overall Attack Success in 2019",
+       x = "Outcome", y = "Count", fill = "Outcome") +
+  theme_minimal()
+```
+
+Figure 1 confirms the imbalance visually. The green bar for successful attacks is much larger than the red bar for unsuccessful ones. This pattern is consistent with how the GTD is constructed ??? attacks that are fully documented tend to be those that actually occurred and achieved some effect, while foiled attempts are harder to capture systematically in the data.
+
+### 2.2 Success by Attack Type
+
+```{r plot-attacktype}
+ggplot(terror2019, aes(x = reorder(attack_lbl, table(attack_lbl)[attack_lbl]),
+                       fill = success)) +
+  geom_bar(position = "dodge", color = "black") +
+  scale_fill_manual(values = c("0" = "#d9534f", "1" = "#5cb85c"),
+                    labels = c("Unsuccessful", "Successful")) +
+  coord_flip() +
+  labs(title = "Figure 2: Attack Success by Attack Type",
+       x = "Attack Type", y = "Count", fill = "Success") +
+  theme_minimal()
+```
+
+Figure 2 shows that Bombing/Explosion and Armed Assault account for the largest share of total attacks in 2019. Most attack types show a high ratio of successful outcomes, but there is meaningful variation. Hijacking and Barricade Incidents have a noticeably higher proportion of failures relative to other methods ??? these tactics require prolonged engagement and give security forces more time to respond and intervene. On the other end, Assassination and Facility Attacks show near-complete success rates, suggesting that once these methods are deployed they are very difficult to stop. This visual pattern strongly suggests attack type will be a meaningful predictor in the regression models.
+
+### 2.3 Success by Weapon Type
+
+```{r plot-weaptype}
+ggplot(terror2019, aes(x = reorder(weapon_lbl, table(weapon_lbl)[weapon_lbl]),
+                       fill = success)) +
+  geom_bar(position = "dodge", color = "black") +
+  scale_fill_manual(values = c("0" = "#d9534f", "1" = "#5cb85c"),
+                    labels = c("Unsuccessful", "Successful")) +
+  coord_flip() +
+  labs(title = "Figure 3: Attack Success by Weapon Type",
+       x = "Weapon Type", y = "Count", fill = "Success") +
+  theme_minimal()
+```
+
+Weapon type codes: 1=Biological, 2=Chemical, 5=Firearms, 6=Explosives, 8=Incendiary, 9=Melee, 10=Vehicle, 11=Sabotage, 12=Other, 13=Unknown.
+
+Figure 3 shows that Firearms and Explosives dominate in raw count, consistent with the attack types seen above. Melee and Incendiary weapons show very high success rates ??? once an arson or close-quarters attack is underway it is extremely difficult to stop. Firearms show a slightly higher proportion of failures, possibly because armed confrontations give targets or law enforcement a chance to fight back. It is also worth noting that several weapon categories like Biological, Chemical, and Sabotage have very few observations in 2019. Model estimates for those rare categories will be unreliable and come with very wide confidence intervals.
+
+### 2.4 Success by Region
+
+```{r plot-region}
+ggplot(terror2019, aes(x = reorder(region_lbl, table(region_lbl)[region_lbl]),
+                       fill = success)) +
+  geom_bar(position = "dodge", color = "black") +
+  scale_fill_manual(values = c("0" = "#d9534f", "1" = "#5cb85c"),
+                    labels = c("Unsuccessful", "Successful")) +
+  coord_flip() +
+  labs(title = "Figure 4: Attack Success by Region",
+       x = "Region", y = "Count", fill = "Success") +
+  theme_minimal()
+```
+
+Figure 4 shows that South Asia, Sub-Saharan Africa, and the Middle East & North Africa account for the bulk of attacks in 2019. These regions also show high absolute counts of successful attacks. Western Europe and North America have far fewer total incidents and show a visibly higher proportion of failures ??? consistent with having stronger counter-terrorism infrastructure and faster law enforcement response times. Regions like Central Asia and Australasia & Oceania contribute very few observations, so their regional estimates in the regression should be interpreted with caution.
+
+### 2.4b Success by Target Type
+
+```{r plot-targtype}
+ggplot(terror2019, aes(x = reorder(targ_lbl, table(targ_lbl)[targ_lbl]),
+                       fill = success)) +
+  geom_bar(position = "dodge", color = "black") +
+  scale_fill_manual(values = c("0" = "#d9534f", "1" = "#5cb85c"),
+                    labels = c("Unsuccessful", "Successful")) +
+  coord_flip() +
+  labs(title = "Figure 4b: Attack Success by Target Type",
+       x = "Target Type", y = "Count", fill = "Success") +
+  theme_minimal()
+```
+
+Figure 4b shows that Private Citizens, Military, Police, and Government (General) are the most frequently targeted groups. Military and Police targets have comparatively more unsuccessful attacks ??? these are hardened targets that can resist or respond. In contrast, Private Citizens and Religious targets show very high success rates, which reflects how vulnerable soft civilian targets tend to be. Several target categories like Maritime, Abortion Related, and Telecom appear very rarely in 2019, which will limit what the regression can reliably say about those specific categories.
+
+### 2.5 Success by Suicide Attack
+
+```{r plot-suicide}
+ggplot(terror2019, aes(x = suicide, fill = success)) +
+  geom_bar(position = "dodge", color = "black") +
+  scale_fill_manual(values = c("0" = "#d9534f", "1" = "#5cb85c"),
+                    labels = c("Unsuccessful", "Successful")) +
+  scale_x_discrete(labels = c("0" = "Non-Suicide", "1" = "Suicide")) +
+  labs(title = "Figure 5: Attack Success by Suicide Attack Status",
+       x = "Suicide Attack", y = "Count", fill = "Success") +
+  theme_minimal()
+```
+
+Figure 5 is one of the most striking visuals in the EDA. Suicide attacks, while far less common than non-suicide attacks in absolute numbers, are associated with a near-perfect success rate. The logic is straightforward: an attacker who has already committed to dying cannot be deterred by personal risk, arrested mid-operation, or convinced to abort. The proportion of unsuccessful non-suicide attacks is noticeably higher by comparison. This variable looks like it will be one of the strongest predictors in the logistic regression models.
+
+### 2.6 Success by Multiple Incident
+
+```{r plot-multiple}
+ggplot(terror2019, aes(x = multiple, fill = success)) +
+  geom_bar(position = "dodge", color = "black") +
+  scale_fill_manual(values = c("0" = "#d9534f", "1" = "#5cb85c"),
+                    labels = c("Unsuccessful", "Successful")) +
+  scale_x_discrete(labels = c("0" = "Single", "1" = "Multiple")) +
+  labs(title = "Figure 6: Attack Success by Part of Multiple Incident",
+       x = "Part of Multiple Incident", y = "Count", fill = "Success") +
+  theme_minimal()
+```
+
+Figure 6 shows that attacks which were part of a coordinated multiple-incident campaign have a slightly higher proportion of successes compared to standalone attacks. The difference is less dramatic than what we saw for suicide status, but it is still visible. Coordinated campaigns likely reflect better-organized, better-resourced groups with stronger operational planning ??? all factors that would naturally improve the odds of completing an attack.
+
+---
+
+## 3. Chi-Square Tests
+
+For each predictor, we test whether it is independent of attack success. Alpha = 0.05 throughout. Since all the covariates and the outcome are categorical, the chi-square test of independence is the appropriate hypothesis test here. The null hypothesis for each test is that the predictor and success are independent. The alternative is that they are not independent. Rejecting the null indicates a statistically significant association and justifies including the variable in the logistic regression.
+
+### 3.1 Attack Type vs. Success
+
+**H0:** Attack type and success are independent.  
+**H1:** Attack type and success are not independent.
+
+```{r chi-attacktype}
+contable_att <- table(terror2019$success, terror2019$attacktype1)
+xkabledply(contable_att, title = "Contingency Table: Success vs. Attack Type")
+chisq.test(contable_att)
+```
+
+The p-value is well below 0.05, so we **reject the null hypothesis**. Attack type and success are not independent. The contingency table shows the pattern clearly ??? Hijacking and Barricade Incidents have higher failure counts relative to their totals, while Assassination and Facility Attacks are almost uniformly successful. These differences are too large to be explained by random chance.
+
+### 3.2 Weapon Type vs. Success
+
+**H0:** Weapon type and success are independent.  
+**H1:** Weapon type and success are not independent.
+
+```{r chi-weaptype}
+contable_wep <- table(terror2019$success, terror2019$weaptype1)
+xkabledply(contable_wep, title = "Contingency Table: Success vs. Weapon Type")
+chisq.test(contable_wep)
+```
+
+The p-value is again below 0.05, so we **reject the null hypothesis**. Weapon type is associated with attack success. Some cells in the contingency table have very low counts, which can make the chi-square approximation slightly less precise, but the overall association is still evident. Certain weapon types like Melee and Incendiary appear almost exclusively in successful attacks, while others show more variation.
+
+### 3.3 Target Type vs. Success
+
+**H0:** Target type and success are independent.  
+**H1:** Target type and success are not independent.
+
+```{r chi-targtype}
+contable_targ <- table(terror2019$success, terror2019$targtype1)
+xkabledply(contable_targ, title = "Contingency Table: Success vs. Target Type")
+chisq.test(contable_targ)
+```
+
+Significant result (p < 0.05), so we **reject the null hypothesis**. Target type is associated with success. Hardened targets like Military and Police show more failures, while soft targets like Private Citizens show lower failure rates. This makes intuitive sense ??? a target that is armed and trained to respond will have a better chance of preventing an attack from completing than an unarmed civilian target.
+
+### 3.4 Region vs. Success
+
+**H0:** Region and success are independent.  
+**H1:** Region and success are not independent.
+
+```{r chi-region}
+contable_reg <- table(terror2019$success, terror2019$region)
+xkabledply(contable_reg, title = "Contingency Table: Success vs. Region")
+chisq.test(contable_reg)
+```
+
+Region is significantly associated with success (p < 0.05), so we **reject the null hypothesis**. Where an attack takes place matters. Regions with active conflicts or weaker state institutions show more successful attacks, while high-capacity regions in Western Europe and North America see proportionally more disrupted attempts. The geographic variation is statistically real and not just noise.
+
+### 3.5 Suicide vs. Success
+
+**H0:** Suicide attack status and success are independent.  
+**H1:** Suicide attack status and success are not independent.
+
+```{r chi-suicide}
+contable_sui <- table(terror2019$success, terror2019$suicide)
+xkabledply(contable_sui, title = "Contingency Table: Success vs. Suicide")
+chisq.test(contable_sui)
+```
+
+The p-value is below 0.05, confirming what Figure 5 showed visually ??? we **reject the null hypothesis**. The contingency table makes the pattern stark: the failure count for suicide attacks is extremely low, while non-suicide attacks show a meaningful number of unsuccessful outcomes. This is one of the clearest associations in the entire analysis.
+
+### 3.6 Multiple Incident vs. Success
+
+**H0:** Part of multiple incident and success are independent.  
+**H1:** Part of multiple incident and success are not independent.
+
+```{r chi-multiple}
+contable_mul <- table(terror2019$success, terror2019$multiple)
+xkabledply(contable_mul, title = "Contingency Table: Success vs. Multiple Incident")
+chisq.test(contable_mul)
+```
+
+Significant result (p < 0.05), so we **reject the null hypothesis** here as well. Being part of a multiple incident is associated with higher success. All six predictors pass the chi-square screening, giving us statistical justification for including all of them as candidates in the logistic regression models.
+
+---
+
+## 4. Logistic Regression
+
+Since `success` is a binary outcome, we use logistic regression (GLM with binomial family). We build and compare three models of increasing complexity. A helper function is defined to extract clean performance metrics from each model.
+
+Because all predictors are categorical, R creates dummy variables for each level, with the lowest numeric level as the reference category. The coefficients represent log-odds, so we exponentiate them to get odds ratios (OR). An OR above 1 means that category increases the odds of success relative to the reference; an OR below 1 means it reduces the odds. A confidence interval that does not include 1 indicates a statistically significant effect.
+
+```{r helper-functions}
+library(knitr)
+library(kableExtra)
+
+# Master label lookup: maps raw coefficient names -> readable labels
+label_map <- c(
+  "(Intercept)"    = "(Intercept)",
+  # Attack type
+  "attacktype12"   = "Attack: Armed Assault",
+  "attacktype13"   = "Attack: Bombing/Explosion",
+  "attacktype14"   = "Attack: Hijacking",
+  "attacktype15"   = "Attack: Barricade Incident",
+  "attacktype16"   = "Attack: Kidnapping",
+  "attacktype17"   = "Attack: Facility Attack",
+  "attacktype18"   = "Attack: Unarmed Assault",
+  "attacktype19"   = "Attack: Unknown",
+  # Weapon type
+  "weaptype12"     = "Weapon: Chemical",
+  "weaptype15"     = "Weapon: Firearms",
+  "weaptype16"     = "Weapon: Explosives",
+  "weaptype18"     = "Weapon: Incendiary",
+  "weaptype19"     = "Weapon: Melee",
+  "weaptype110"    = "Weapon: Vehicle",
+  "weaptype111"    = "Weapon: Sabotage",
+  "weaptype112"    = "Weapon: Other",
+  "weaptype113"    = "Weapon: Unknown",
+  # Target type
+  "targtype12"     = "Target: Government (General)",
+  "targtype13"     = "Target: Police",
+  "targtype14"     = "Target: Military",
+  "targtype15"     = "Target: Abortion Related",
+  "targtype16"     = "Target: Airports & Aircraft",
+  "targtype17"     = "Target: Government (Diplomatic)",
+  "targtype18"     = "Target: Educational Institution",
+  "targtype19"     = "Target: Food/Water Supply",
+  "targtype110"    = "Target: Journalists & Media",
+  "targtype111"    = "Target: Maritime",
+  "targtype112"    = "Target: NGO",
+  "targtype113"    = "Target: Other",
+  "targtype114"    = "Target: Private Citizens",
+  "targtype115"    = "Target: Religious",
+  "targtype116"    = "Target: Telecom",
+  "targtype117"    = "Target: Terrorists/Militias",
+  "targtype118"    = "Target: Tourists",
+  "targtype119"    = "Target: Transportation",
+  "targtype120"    = "Target: Unknown",
+  "targtype121"    = "Target: Utilities",
+  "targtype122"    = "Target: Violent Political Parties",
+  # Region
+  "region2"        = "Region: Cent. America & Caribbean",
+  "region3"        = "Region: South America",
+  "region4"        = "Region: East Asia",
+  "region5"        = "Region: Southeast Asia",
+  "region6"        = "Region: South Asia",
+  "region7"        = "Region: Central Asia",
+  "region8"        = "Region: Western Europe",
+  "region9"        = "Region: Eastern Europe",
+  "region10"       = "Region: Middle East & N. Africa",
+  "region11"       = "Region: Sub-Saharan Africa",
+  "region12"       = "Region: Australasia & Oceania",
+  # Suicide / multiple
+  "suicide1"       = "Suicide Attack: Yes",
+  "multiple1"      = "Part of Multiple Incident: Yes"
+)
+
+# Helper: formatted coefficient table with OR and 95% CI
+coef_table <- function(model, title = "Coefficient Table") {
+  s      <- summary(model)$coefficients
+  or     <- exp(s[, 1])
+  ci     <- exp(confint.default(model))
+  df_out <- data.frame(
+    Predictor    = ifelse(rownames(s) %in% names(label_map),
+                          label_map[rownames(s)], rownames(s)),
+    Coefficient  = round(s[, 1], 4),
+    Std.Error    = round(s[, 2], 4),
+    z.value      = round(s[, 3], 4),
+    p.value      = round(s[, 4], 4),
+    OR           = round(or, 4),
+    CI_lower_95  = round(ci[, 1], 4),
+    CI_upper_95  = round(ci[, 2], 4)
+  )
+  rownames(df_out) <- NULL
+  kable(df_out, caption = title) %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                  full_width = FALSE, font_size = 12)
+}
+
+# Helper: confusion matrix metrics table (handles incomplete matrices)
+conf_metrics <- function(pred, actual, model_name = "Model") {
+  cm   <- table(factor(pred, levels = c(0,1)),
+                factor(actual, levels = c(0,1)))
+  TN   <- cm[1, 1]; FP <- cm[2, 1]
+  FN   <- cm[1, 2]; TP <- cm[2, 2]
+  acc  <- round((TP + TN) / sum(cm), 4)
+  sens <- round(TP  / (TP + FN), 4)
+  spec <- round(TN  / (TN + FP), 4)
+  prec <- ifelse((TP + FP) == 0, NA, round(TP / (TP + FP), 4))
+  f1   <- ifelse(is.na(prec), NA, round(2 * prec * sens / (prec + sens), 4))
+  data.frame(Model       = model_name,
+             Accuracy    = acc,
+             Sensitivity = sens,
+             Specificity = spec,
+             Precision   = prec,
+             F1_Score    = f1)
+}
+```
+
+### 4.1 Model 1: Full Model (All Predictors)
+
+Model 1 includes all six predictors: attack type, weapon type, target type, region, suicide status, and multiple incident. This is the most complex model and serves as an upper bound ??? if a simpler model achieves similar performance, we have good reason to prefer it on parsimony grounds.
+
+```{r model1}
+model1 <- glm(success ~ attacktype1 + weaptype1 + targtype1 + region + suicide + multiple,
+              data = terror2019, family = binomial)
+```
+
+**Table 8: Coefficients, Odds Ratios, and 95% CI  Model 1**
+
+```{r model1-coeftable, results='asis'}
+coef_table(model1, title = "Table 8: Model 1  Coefficients, OR, and 95% CI")
+```
+
+Looking at the coefficients in Table 8, the suicide attack variable has one of the largest positive effects in the full model, confirming the strong visual pattern from the EDA. Several attack type categories are statistically significant compared to the Assassination reference, particularly Hijacking and Barricade Incident which show reduced odds of success. Interestingly, not all weapon type or target type coefficients are significant once all variables are controlled for simultaneously ??? this is a sign that some of the bivariate associations seen in the EDA were partly explained by overlap with other predictors.
+
+**Confusion Matrix and Performance Metrics  Model 1:**
+
+```{r model1-confusion}
+probs1 <- predict(model1, type = "response")
+pred1  <- ifelse(probs1 > 0.5, 1, 0)
+cm1    <- table(Predicted = pred1, Actual = terror2019$success)
+xkabledply(cm1, title = "Confusion Matrix  Model 1")
+metrics1 <- conf_metrics(pred1, terror2019$success, "Model 1 (Full)")
+kable(metrics1, caption = "Table 9: Performance Metrics  Model 1") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+The confusion matrix shows that Model 1 correctly classifies most successful attacks (high sensitivity) but struggles more with the minority class of unsuccessful attacks (lower specificity). This is expected given the class imbalance ??? the model has far more examples of successful attacks to learn from. Accuracy alone looks high on paper, but given the imbalance, AUC is the more informative metric here.
+
+**ROC Curve and AUC  Model 1:**
+
+```{r model1-roc}
+roc1  <- roc(terror2019$success, probs1)
+plot(roc1, main = "Figure 7: ROC Curve  Model 1 (Full Model)")
+best1 <- coords(roc1, "best", ret = c("threshold", "sensitivity", "specificity"),
+                best.method = "youden")
+kable(as.data.frame(best1), digits = 4,
+      caption = "Table 10: Best Threshold (Youden)  Model 1") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+cat("AUC Model 1:", round(auc(roc1), 4), "\n")
+```
+
+The AUC for Model 1 tells us how well the model distinguishes between successful and unsuccessful attacks across all possible thresholds. An AUC of 0.5 would be no better than a coin flip. The Youden-optimal threshold in Table 10 is the cut-point that maximizes the combined sensitivity and specificity ??? it is often lower than 0.5 when the outcome is imbalanced, which adjusts for the fact that unsuccessful attacks are much rarer in the data.
+
+---
+
+### 4.2 Model 2: Reduced Model (Attack Type + Weapon Type + Region + Suicide)
+
+Model 2 drops target type and multiple incident from the full model. The reasoning is parsimony: these two variables showed weaker visual signals in the EDA compared to the others, and a model with fewer predictors is generally easier to interpret and less likely to overfit. The likelihood ratio test in Section 5 will formally confirm whether the reduced model loses significant explanatory power.
+
+```{r model2}
+model2 <- glm(success ~ attacktype1 + weaptype1 + region + suicide,
+              data = terror2019, family = binomial)
+```
+
+**Table 11: Coefficients, Odds Ratios, and 95% CI  Model 2**
+
+```{r model2-coeftable, results='asis'}
+coef_table(model2, title = "Table 11: Model 2  Coefficients, OR, and 95% CI")
+```
+
+The coefficient pattern in Model 2 is broadly consistent with Model 1, which is reassuring ??? it means the estimates are stable and not being heavily distorted by the dropped variables. Suicide attack remains the strongest predictor. Attack types requiring prolonged standoffs continue to show reduced odds of success relative to Assassination. Region coefficients reflect the geographic variation from the EDA, with conflict-heavy regions showing higher odds of success and high-capacity regions showing lower odds compared to North America as the reference.
+
+**Confusion Matrix and Performance Metrics  Model 2:**
+
+```{r model2-confusion}
+probs2 <- predict(model2, type = "response")
+pred2  <- ifelse(probs2 > 0.5, 1, 0)
+cm2    <- table(Predicted = pred2, Actual = terror2019$success)
+xkabledply(cm2, title = "Confusion Matrix  Model 2")
+metrics2 <- conf_metrics(pred2, terror2019$success, "Model 2 (Reduced)")
+kable(metrics2, caption = "Table 12: Performance Metrics Model 2") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+**ROC Curve and AUC Model 2:**
+
+```{r model2-roc}
+roc2  <- roc(terror2019$success, probs2)
+plot(roc2, main = "Figure 8: ROC Curve Model 2 (Reduced Model)")
+best2 <- coords(roc2, "best", ret = c("threshold", "sensitivity", "specificity"),
+                best.method = "youden")
+kable(as.data.frame(best2), digits = 4,
+      caption = "Table 13: Best Threshold (Youden) Model 2") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+cat("AUC Model 2:", round(auc(roc2), 4), "\n")
+```
+
+Model 2 achieves an AUC very close to Model 1, which suggests that removing target type and multiple incident did not meaningfully hurt the model's ability to distinguish between successful and unsuccessful attacks. If the likelihood ratio test confirms that the fit difference between Models 1 and 2 is not statistically significant, Model 2 would be the preferred choice ??? similar performance with fewer parameters and a lower risk of overfitting.
+
+---
+
+### 4.3 Model 3: Minimal Model (Attack Type + Suicide)
+
+Model 3 reduces the specification to just the two variables with the clearest and most theoretically grounded associations with success throughout the analysis: attack type and suicide status. This serves as a useful lower bound. If this minimal model performs nearly as well as the others, it would suggest that most of the explainable variation in attack success can be captured by just these two variables.
+
+```{r model3}
+model3 <- glm(success ~ attacktype1 + suicide,
+              data = terror2019, family = binomial)
+```
+
+**Table 14: Coefficients, Odds Ratios, and 95% CI Model 3**
+
+```{r model3-coeftable, results='asis'}
+coef_table(model3, title = "Table 14: Model 3 Coefficients, OR, and 95% CI")
+```
+
+With only two predictors, the coefficient estimates in Model 3 are similar in direction and sign to the more complex models. This consistency across all three model specifications is reassuring ??? it means the key relationships are real and not artifacts of a particular set of control variables. Suicide attack continues to show a large positive coefficient, and the attack type contrasts remain interpretable and directionally consistent.
+
+**Confusion Matrix and Performance Metrics Model 3:**
+
+```{r model3-confusion}
+probs3 <- predict(model3, type = "response")
+pred3  <- ifelse(probs3 > 0.5, 1, 0)
+cm3    <- table(Predicted = pred3, Actual = terror2019$success)
+xkabledply(cm3, title = "Confusion Matrix Model 3")
+metrics3 <- conf_metrics(pred3, terror2019$success, "Model 3 (Minimal)")
+kable(metrics3, caption = "Table 15: Performance Metrics Model 3") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+**ROC Curve and AUC Model 3:**
+
+```{r model3-roc}
+roc3  <- roc(terror2019$success, probs3)
+plot(roc3, main = "Figure 9: ROC Curve Model 3 (Minimal Model)")
+best3 <- coords(roc3, "best", ret = c("threshold", "sensitivity", "specificity"),
+                best.method = "youden")
+kable(as.data.frame(best3), digits = 4,
+      caption = "Table 16: Best Threshold (Youden) Model 3") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+cat("AUC Model 3:", round(auc(roc3), 4), "\n")
+```
+
+---
+
+## 5. Model Comparison
+
+### 5.1 Likelihood Ratio Tests
+
+The likelihood ratio test compares nested models by looking at the difference in their deviances. If the p-value is below 0.05, the extra parameters in the larger model genuinely improve fit beyond what chance would produce and are worth keeping. If the p-value is above 0.05, the simpler model is adequate and should be preferred.
+
+```{r model-comparison}
+null_dev <- model1$null.deviance
+null_df  <- model1$df.null
+
+p_m1    <- pchisq(null_dev - model1$deviance,
+                  df = null_df - model1$df.residual, lower.tail = FALSE)
+p_m2    <- pchisq(null_dev - model2$deviance,
+                  df = null_df - model2$df.residual, lower.tail = FALSE)
+p_m3    <- pchisq(null_dev - model3$deviance,
+                  df = null_df - model3$df.residual, lower.tail = FALSE)
+p_m1_m2 <- pchisq(model2$deviance - model1$deviance,
+                   df = model2$df.residual - model1$df.residual, lower.tail = FALSE)
+p_m2_m3 <- pchisq(model3$deviance - model2$deviance,
+                   df = model3$df.residual - model2$df.residual, lower.tail = FALSE)
+
+lrt_table <- data.frame(
+  Comparison         = c("Model 1 vs Null", "Model 2 vs Null", "Model 3 vs Null",
+                          "Model 1 vs Model 2", "Model 2 vs Model 3"),
+  Chi_sq_statistic   = round(c(null_dev - model1$deviance,
+                                null_dev - model2$deviance,
+                                null_dev - model3$deviance,
+                                model2$deviance - model1$deviance,
+                                model3$deviance - model2$deviance), 2),
+  df                 = c(null_df - model1$df.residual,
+                          null_df - model2$df.residual,
+                          null_df - model3$df.residual,
+                          model2$df.residual - model1$df.residual,
+                          model3$df.residual - model2$df.residual),
+  p_value            = round(c(p_m1, p_m2, p_m3, p_m1_m2, p_m2_m3), 6)
+)
+
+kable(lrt_table, caption = "Table 17: Likelihood Ratio Tests Model Comparisons") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+All three models improve significantly over the null (intercept-only) model, confirming that the included predictors collectively explain real variation in attack success. The critical comparison is Model 1 vs. Model 2: if that p-value is above 0.05, it means target type and multiple incident do not add significant explanatory power once attack type, weapon type, region, and suicide are already in the model, and the simpler Model 2 is preferred. The Model 2 vs. Model 3 comparison tells us whether region and weapon type contribute meaningful improvement beyond attack type and suicide status alone.
+
+### 5.2 Overall Model Performance Summary
+
+```{r model-summary-table}
+all_metrics <- rbind(metrics1, metrics2, metrics3)
+all_metrics$AUC <- round(c(as.numeric(auc(roc1)),
+                            as.numeric(auc(roc2)),
+                            as.numeric(auc(roc3))), 4)
+all_metrics$AIC <- round(c(AIC(model1), AIC(model2), AIC(model3)), 2)
+all_metrics$Null_Deviance  <- round(c(model1$null.deviance,
+                                       model2$null.deviance,
+                                       model3$null.deviance), 2)
+all_metrics$Resid_Deviance <- round(c(model1$deviance,
+                                       model2$deviance,
+                                       model3$deviance), 2)
+
+kable(all_metrics,
+      caption = "Table 18: Full Model Comparison Accuracy, AUC, AIC, Deviance") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                full_width = FALSE) %>%
+  column_spec(2:8, bold = FALSE) %>%
+  row_spec(which.max(all_metrics$AUC), bold = TRUE, color = "white", background = "#5cb85c")
+```
+
+The highlighted row indicates the best-performing model by AUC.
+
+Table 18 puts all three models side by side across every key metric. Lower AIC is better ??? a model gets penalized for each additional parameter, so a lower AIC means the extra complexity was actually worth it. Higher AUC is better for discrimination. If Model 2 has a lower AIC than Model 1 and a competitive AUC, it is the better overall choice. Model 3 gives us a useful reference: if it falls noticeably short on AUC and AIC compared to Model 2, it confirms that region and weapon type are genuinely adding explanatory value and should not be dropped.
+
+---
+
+## 6. Odds Ratios Best Model
+
+Based on AUC, AIC, and the likelihood ratio tests, we interpret odds ratios with 95% confidence intervals for the best-performing model (Model 2).
+
+```{r odds-ratios}
+or_vals <- exp(coef(model2))
+ci_vals <- exp(confint.default(model2))
+
+or_df <- data.frame(
+  Predictor   = ifelse(names(or_vals) %in% names(label_map),
+                       label_map[names(or_vals)], names(or_vals)),
+  OR          = round(or_vals, 4),
+  CI_lower_95 = round(ci_vals[, 1], 4),
+  CI_upper_95 = round(ci_vals[, 2], 4)
+)
+rownames(or_df) <- NULL
+
+kable(or_df, caption = "Table 19: Odds Ratios with 95% CI Model 2 (Best Model)") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE) %>%
+  row_spec(which(or_df$OR > 1 & or_df$CI_lower_95 > 1), background = "#d4edda") %>%
+  row_spec(which(or_df$OR < 1 & or_df$CI_upper_95 < 1), background = "#f8d7da")
+```
+
+Rows highlighted in **green** indicate predictors that significantly *increase* the odds of success (OR > 1, CI entirely above 1). Rows in **red** indicate predictors that significantly *decrease* the odds of success.
+
+Looking at the odds ratios in Table 19, a few findings stand out. The suicide attack variable has one of the largest positive ORs in the model ??? a suicide attack has substantially higher odds of succeeding compared to a non-suicide attack, and that confidence interval does not include 1, making it statistically significant. Among attack types, categories like Hijacking and Barricade Incident show ORs below 1 relative to the Assassination baseline, confirming these methods are more likely to fail once you control for weapon type, region, and suicide status. Several region coefficients are also significant, with conflict-heavy regions showing higher odds of success compared to North America. For weapon type, the effects are more mixed ??? some categories show meaningful ORs while others have wide confidence intervals reflecting the low cell counts we saw in the EDA for rare weapon types. Predictors whose confidence intervals cross 1 are not statistically significant at the 0.05 level and should not be interpreted as having a reliable directional effect.
+
+---
+
+## 7. Conclusions
+
+Based on the 2019 GTD data (`r nrow(terror2019)` attacks), the chi-square tests indicate that **all six predictors** ??? attack type, weapon type, target type, region, suicide status, and whether the attack was part of a multiple incident ??? are statistically associated with attack success (all p-values < 0.05).
+
+The logistic regression models confirm that **attack type** and **suicide status** are the strongest and most consistent predictors of success across all three model specifications. Suicide attacks are significantly more likely to succeed than non-suicide attacks ??? the attacker's commitment to dying in the attempt removes nearly all possibility of deterrence or disruption once underway. Among attack types, methods requiring prolonged engagement like Hijacking and Barricade Incidents have the highest failure rates, while Assassination and Facility Attacks are nearly always completed. Region and weapon type add meaningful predictive power on top of these two variables, while target type and multiple incident contribute less once the other factors are controlled for.
+
+Model 2 ??? using attack type, weapon type, region, and suicide ??? offers the best balance of fit and parsimony, with competitive AUC and lower AIC relative to the full model. Thinking practically: if a terrorist attack occurred in 2019, the single biggest factor in whether it succeeded was whether the attacker was willing to die. Beyond that, the method of attack and where it happened mattered more than what kind of target was chosen or what weapon was used.
 
