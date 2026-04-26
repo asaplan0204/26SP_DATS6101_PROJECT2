@@ -570,6 +570,156 @@ To conclude, depending on the number of attacks within one terrorist attack, the
 
 
 
+---
+title: "War on Terror project 2 Ali Mutasim"
+output: html_document
+date: "2026-04-16"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+
+library(dplyr)
+library(ggplot2)
+library(MASS)     
+library(rpart)   
+library(rpart.plot)
+```
+
+libraries were imported to do data manipulation, visualization, regression modeling, feature selection, and decsision trees. 
 
 
+```{r}
+Terror <- read.csv("TerrorData.csv")
+
+Terror$iyear <- as.numeric(Terror$iyear)
+Terror$nkill <- as.numeric(Terror$nkill)
+Terror$nwound <- as.numeric(Terror$nwound)
+Terror$propvalue <- as.numeric(Terror$propvalue)
+
+Terror$nkill[is.na(Terror$nkill)] <- 0
+Terror$nwound[is.na(Terror$nwound)] <- 0
+Terror$propvalue[is.na(Terror$propvalue)] <- 0
+```
+
+the variables are converted into numeric form so that R can analzye and calculate well. it replaces NA values with zeros so that errors aren't caused.
+
+
+```{r}
+Terror$casualties <- Terror$nkill + Terror$nwound
+Terror$log_casualties <- log1p(Terror$casualties)
+Terror$log_prop <- log1p(Terror$propvalue)
+
+Terror$period <- ifelse(Terror$iyear < 2001, "Pre-2001", "Post-2001")
+Terror$period <- as.factor(Terror$period)
+```
+here number of killed and wounded into one variable called casualties. variable to show severity. log transforamtion is used to make them suitable for regression modeling. a variable period is created so that attacks are compared pre and post 2001.
+
+```{r}
+attacks_per_year <- Terror %>%
+  group_by(iyear) %>%
+  summarise(n_attacks = n(), .groups = "drop") %>%
+  mutate(period = ifelse(iyear < 2001, "Pre-2001", "Post-2001"))
+
+ggplot(attacks_per_year, aes(x = iyear, y = n_attacks)) +
+  geom_line() +
+  geom_vline(xintercept = 2001, linetype="dashed")
+
+ggplot(attacks_per_year, aes(x = period, y = n_attacks)) +
+  geom_boxplot(fill="lightblue")
+
+t.test(n_attacks ~ period, data = attacks_per_year)
+```
+
+
+Plots are created here by grouping attacks in each year and seeing how the frequency of these attaks change over time. a line plot is created to show how the number of attacks changes over time. a boxplot is created to show the frequency of attacks pre and post 2001 or 9/11
+
+
+```{r}
+# Scatterplot: casualties vs year
+ggplot(Terror, aes(x = iyear, y = casualties)) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(method = "lm")
+
+# Correlation matrix (numeric only)
+numeric_vars <- Terror[, c("iyear","nkill","nwound","propvalue","casualties")]
+cor(numeric_vars, use="complete.obs")
+
+```
+This step involves two-variable graphics to examine the relationships in the data. To determine whether the intensity of attacks varies with time a scatterplot of year vs casualties is plotted. The numeric variables are also correlated to one another, so that you can learn whether or not the variables move together, and whether there are any strong linear associations among them.
+
+
+```{r}
+model_full <- lm(log_casualties ~ iyear + attacktype1_txt + region_txt + period,
+                 data = Terror)
+
+summary(model_full)
+```
+
+A regression model is then constructed to describe the severity of attacks using the script. In this model, the dependent variable will be the log-transformed number of casualties, with the predictors being year, type of attack, region and period. This enables you to test the relationship between that and the other factors in the model and the other factors that are associated with more severe attacks.
+
+
+```{r}
+model_step <- stepAIC(model_full, direction = "both")
+
+summary(model_step)
+```
+Once the entire regression model has been fitted, the script will select features by relying on stepAIC. The process eliminates variables which do not contribute to the model to the extent desired and retains the combination of predictors which offers the best tradeoff between model fit and simplicity. This is useful in creating a model that is less complicated and can be more efficient.
+
+
+```{r}
+# R-squared
+summary(model_step)$r.squared
+
+# Adjusted R-squared
+summary(model_step)$adj.r.squared
+
+# ANOVA comparison
+anova(model_step)
+```
+
+After the last model has been selected, the script analyses the performance of the model. It analyzes the value of the R-squared and adjusted R-squared to understand the extent of the variation in the severity of the attack explained by the model. It also compares ANOVA output to determine the significance of the terms fitted in the model.
+
+```{r}
+par(mfrow=c(1,1))
+plot(model_step)
+```
+
+Improper assumptions of the regression model are then verified using the regression model on the basis of diagnostic plots. These plots assist you to observe whether or not the residual values are approximately normal, the variance is reasonably constant, and whether there are influential points that may substantially affect the outcomes. This is significant in the sense that when the assumptions of the regression are moderately satisfied, the conclusions of the regression are more trustworthy.
+
+```{r}
+model_prop <- lm(log_prop ~ iyear + attacktype1_txt + region_txt + period,
+                 data = Terror)
+
+summary(model_prop)
+```
+
+The script then makes a second regression model with log-transformed property damage as a dependent variable. The reason behind this is that the severity that your project is gauging on is not only based on casualties, but also on property damages, which is the second outcome. This model assists in determining what variables are related to more harmful attacks in terms of property damage.
+
+```{r}
+tree_model <- rpart(log_casualties ~ iyear + attacktype1_txt + region_txt + period,
+                    data = Terror,
+                    method = "anova")
+
+rpart.plot(tree_model)
+```
+A decision tree model of casualties is also provided in the script. A decision tree is more flexible in capturing nonlinear patterns and interactions than linear regression. This provides you another modeling method to contrast the regression results and makes your project stronger in the technical aspect.
+
+```{r}
+chisq.test(table(Terror$attacktype1_txt, Terror$period))
+chisq.test(table(Terror$region_txt, Terror$period))
+
+```
+
+Lastly, chi-square tests are employed in the script to examine the change in categorical patterns with time. One chi-square test is used to test whether the distribution of attacks type differs between the pre-2001 and the post-2001 period, and another one to test whether the regional distribution of attacks varies across the period. These tests are useful in ascertaining whether patterns of terrorism changed in terms of structure following 9/11, and not merely in terms of frequency or intensity.
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
