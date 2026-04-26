@@ -11,7 +11,7 @@
 
 <meta name="author" content="Aspen Saplan" />
 
-<meta name="date" content="2026-04-20" />
+<meta name="date" content="2026-04-24" />
 
 <title>Project2-EDA/logit-Aspen</title>
 
@@ -1793,15 +1793,15 @@ border-radius: 0px;
 
 <h1 class="title toc-ignore">Project2-EDA/logit-Aspen</h1>
 <h4 class="author">Aspen Saplan</h4>
-<h4 class="date">2026-04-20</h4>
+<h4 class="date">2026-04-24</h4>
 
 </div>
 
 
-<div id="how-does-multiple-attacks-weapon-type-attack-type-month-of-attack-or-region-of-attack-influence-whether-a-terrorist-attack-causes-property-damage" class="section level1">
+<div id="how-does-multiple-attacks-weapon-type-attack-type-month-of-attack-or-region-of-attack-influence-whether-a-terrorist-attack-causes-property-damage-in-2019" class="section level1">
 <h1>How does multiple attacks, weapon type, attack type, month of
 attack, or region of attack influence whether a terrorist attack causes
-property damage?</h1>
+property damage in 2019?</h1>
 <div id="author-of-this-section-aspen-saplan" class="section level2">
 <h2>Author of this section: Aspen Saplan</h2>
 </div>
@@ -1890,7 +1890,9 @@ no property damage caused by this terrorist attack. All of these
 variables are of the type categorical variable, so the first thing that
 must be done is as factoring them so that r studio can represent them
 correctly.</p>
-<pre class="r"><code>terror2019 = read.csv(&quot;TerrorData.csv&quot;)
+<pre class="r"><code>terror2019 = read.csv(&quot;TerrorData-2019.csv&quot;)
+# If other datasets are used and include more than years 2019
+# terror2019 = terror2019[terror2019$iyear == 2019, ]
 terror2019 = terror2019[, c(&quot;property&quot;, &quot;multiple&quot;, &quot;weaptype1&quot;, &quot;attacktype1&quot;, &quot;imonth&quot;, &quot;region&quot;)]
 terror2019 = terror2019[terror2019$property != -9 &amp; !is.na(terror2019$property),]
 terror2019$property = as.factor(terror2019$property)
@@ -2835,8 +2837,8 @@ best</code></pre>
 </div>
 <div id="deviance-1" class="section level3">
 <h3>Deviance:</h3>
-<pre class="r"><code>p1 = pchisq(8958.7 - 7616.2, df = 20, lower.tail = FALSE)
-p1</code></pre>
+<pre class="r"><code>p2 = pchisq(8958.7 - 7616.2, df = 20, lower.tail = FALSE)
+p2</code></pre>
 <pre><code>## [1] 2.332803e-272</code></pre>
 <p>Through different testing of plugging and chugging different sets of
 independent variables, model two is the one that showed the best results
@@ -2949,8 +2951,9 @@ p2</code></pre>
 <p>The inclusion of this third model is just to give a comparison of why
 model two was selected as the best model. Model 2 has a better
 predictive accuracy than model 3. Model 2 also has a lower aic than
-model 3 indicating a better goodness of fit test score. Model 2 also has
-a higher auc than model 3 indicating that model 2 is better at
+model 3 indicating it is a better model even with model 2 getting
+penalized for having more independent variables. Model 2 also has a
+higher auc than model 3 indicating that model 2 is better at
 distinguishing the different cases than model 3.</p>
 </div>
 </div>

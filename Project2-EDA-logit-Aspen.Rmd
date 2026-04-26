@@ -11,7 +11,7 @@ output:
     toc_float: yes
 ---
 
-# How does multiple attacks, weapon type, attack type, month of attack, or region of attack influence whether a terrorist attack causes property damage?
+# How does multiple attacks, weapon type, attack type, month of attack, or region of attack influence whether a terrorist attack causes property damage in 2019?
 
 ## Author of this section: Aspen Saplan
 
@@ -135,7 +135,9 @@ output:
 Multiple attacks variable represents if the record was one singular terrorist attack or if there were multiple combined that represent one terrorist attack.  The weapon type variable represents what type of weapon was used to perform the terrorist attack.  The month of attack variable represents what month the terrorist attack occurred in.  The region variable represents the region that the terrorist attack took place in.  The property variable is the dependent variable that will be examined and represents whether there was property damage or there was no property damage caused by this terrorist attack.  All of these variables are of the type categorical variable, so the first thing that must be done is as factoring them so that r studio can represent them correctly.  
 
 ```{r,echo=TRUE}
-terror2019 = read.csv("TerrorData.csv")
+terror2019 = read.csv("TerrorData-2019.csv")
+# If other datasets are used and include more than years 2019
+# terror2019 = terror2019[terror2019$iyear == 2019, ]
 terror2019 = terror2019[, c("property", "multiple", "weaptype1", "attacktype1", "imonth", "region")]
 terror2019 = terror2019[terror2019$property != -9 & !is.na(terror2019$property),]
 terror2019$property = as.factor(terror2019$property)
@@ -414,8 +416,8 @@ best
 ### Deviance:
 
 ```{r,echo=TRUE}
-p1 = pchisq(8958.7 - 7616.2, df = 20, lower.tail = FALSE)
-p1
+p2 = pchisq(8958.7 - 7616.2, df = 20, lower.tail = FALSE)
+p2
 ```
 
 Through different testing of plugging and chugging different sets of independent variables, model two is the one that showed the best results while also not being overfitted with data.  The variables that were chosen to be left in as covariates include multiple, attack type, and month variables.  This produced a model that has an aic of 7658.2, which was lower than any other model that was tested on.  Model two has an accuracy of about sixty seven point two percent.  Model two’s auc is about seventy three percent.  While model two’s deviance is less than 0.05, but not exactly zero indicating that it is statistically better than the null and saturated models and that it is not overfitting the data. 
@@ -468,7 +470,7 @@ p2 = pchisq(8958.7 - 7664.5, df = 11, lower.tail = FALSE)
 p2
 ```
 
-The inclusion of this third model is just to give a comparison of why model two was selected as the best model.  Model 2 has a better predictive accuracy than model 3.  Model 2 also has a lower aic than model 3 indicating a better goodness of fit test score.  Model 2 also has a higher auc than model 3 indicating that model 2 is better at distinguishing the different cases than model 3.
+The inclusion of this third model is just to give a comparison of why model two was selected as the best model.  Model 2 has a better predictive accuracy than model 3.  Model 2 also has a lower aic than model 3 indicating it is a better model even with model 2 getting penalized for having more independent variables.  Model 2 also has a higher auc than model 3 indicating that model 2 is better at distinguishing the different cases than model 3.
 
 ## Conclusion:
 

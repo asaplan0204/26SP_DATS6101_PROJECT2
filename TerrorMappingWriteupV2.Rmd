@@ -4,7 +4,7 @@ author: "Alex Rizzo-Banks"
 date: "`r Sys.Date()`"
 output: 
   html_document:
-    code_folding: show
+    code_folding: hide
     number_sections: TRUE
     toc: yes
     toc_depth: 3
@@ -100,3 +100,476 @@ ggplot(GTDalex) + geom_bar(mapping = aes(GTDalex$Year))
 
 ggplot(TerrorData) + geom_bar(mapping = aes(TerrorData$iyear))
 ```
+
+
+
+# How does multiple attacks, weapon type, attack type, month of attack, or region of attack influence whether a terrorist attack causes property damage in 2019?
+
+## Author of this section: Aspen Saplan
+
+## Variable Key:
+
+#### Property:
+
+0 = No
+
+1 = Yes
+
+#### AttackType1:
+
+1 = ASSASSINATION
+
+2 = ARMED ASSAULT
+
+3 = BOMBING/EXPLOSION
+
+4 = HIJACKING
+
+5 = HOSTAGE TAKING (BARRICADE INCIDENT)
+
+6 = HOSTAGE TAKING (KIDNAPPING)
+
+7 = FACILITY / INFRASTRUCTURE ATTACK
+
+8 = UNARMED ASSAULT
+
+9 = UNKNOWN
+
+#### WeaponType1:
+
+1 = Biological
+
+2 = Chemical
+
+3 = Radiological
+
+4 = Nuclear
+
+5 = Firearms
+
+6 = Explosives
+
+7 = Fake Weapons
+
+8 = Incendiary
+
+9 = Melee
+
+10 = Vehicle
+
+11 = Sabotage Equipment
+
+12 = Other
+
+13 =  Unknown
+
+#### Multiple:
+
+0 = No
+
+1 = Yes
+
+#### Month:
+
+1 = Jan
+
+2 = Feb
+
+3 = Mar
+
+4 = April
+
+5 = May
+
+6 = June
+
+7 = July
+
+8 = Aug
+
+9 = Sep
+
+10 = Oct
+
+11 = Nov
+
+12 = Dec
+
+#### Region:
+
+1 = North America
+
+2 = Central America & Caribbean
+
+3 = South America
+
+4 = East Asia
+
+5 = Southeast Asia
+
+6 = South Asia
+
+7 = Central Asia
+
+8 = Western Europe
+
+9 = Eastern Europe
+
+10 = Middle East & North Africa
+
+11 = Sub-Saharan Africa
+
+12 = Australasia & Oceania
+
+
+## Set up of terror2019 dataset:
+
+Multiple attacks variable represents if the record was one singular terrorist attack or if there were multiple combined that represent one terrorist attack.  The weapon type variable represents what type of weapon was used to perform the terrorist attack.  The month of attack variable represents what month the terrorist attack occurred in.  The region variable represents the region that the terrorist attack took place in.  The property variable is the dependent variable that will be examined and represents whether there was property damage or there was no property damage caused by this terrorist attack.  All of these variables are of the type categorical variable, so the first thing that must be done is as factoring them so that r studio can represent them correctly.  
+
+```{r,echo=TRUE}
+terror2019 = read.csv("TerrorData-2019.csv")
+# If other datasets are used and include more than years 2019
+# terror2019 = terror2019[terror2019$iyear == 2019, ]
+terror2019 = terror2019[, c("property", "multiple", "weaptype1", "attacktype1", "imonth", "region")]
+terror2019 = terror2019[terror2019$property != -9 & !is.na(terror2019$property),]
+terror2019$property = as.factor(terror2019$property)
+terror2019$multiple = as.factor(terror2019$multiple)
+terror2019$weaptype1 = as.factor(terror2019$weaptype1)
+terror2019$attacktype1 = as.factor(terror2019$attacktype1)
+terror2019$imonth= as.factor(terror2019$imonth)
+terror2019$region = as.factor(terror2019$region)
+str(terror2019)
+```
+## Balance Check:
+
+The next part of exploratory data analysis that is looked at is the ratio of zeros and ones in the property variable in order to know if this variable is balanced.  Which as seen this variable is about fifty four percent no property damage and forty six percent yes property damage.  Which is a pretty good balance of both yes and no values indicating that this is a good dependent variable choice for logistic regression modelling.  
+
+Number of records in 2019 with either property damage or no property damage:
+
+```{r,echo=TRUE}
+total = nrow(terror2019)
+total
+```
+
+Number of records in 2019 without property damage:
+
+```{r,echo=TRUE}
+npd = sum(terror2019$property == 0)
+npd
+```
+
+Number of records in 2019 with property damage:
+
+```{r,echo=TRUE}
+pd = sum(terror2019$property == 1)
+pd
+```
+
+Percentage of records without property damage:
+
+```{r,echo=TRUE}
+(npd/total)
+```
+
+Percentage of records with property damage:
+```{r,echo=TRUE}
+(pd/total)
+```
+
+## EDA using Bar Charts:
+
+As seen below are all the bar charts that represent the number of property damage compared to each potential covariate.  The red bars represent no property damage, while the purple bars represent yes property damage.
+
+For multiple terrorist attacks, no property damage is favored for single terrorist attacks, while yes property damage is favored for multiple terrorist attacks.  Although, the single terrorist attack overall has more values then multiple terrorist attacks.  
+
+```{r,echo=TRUE}
+library(ggplot2)
+ggplot(terror2019, aes(x = multiple, fill = property)) +
+  geom_bar(position = "dodge", color = "black")+
+  scale_fill_manual(values = c(
+    "1" = "purple",
+    "0" = "red"
+  ))+
+  labs(title = "Count of Property Damage by Multiple Attacks",
+    x = "Multiple",
+    y = "Count of Property Damage",
+    fill = "Property Damage")
+```
+
+The weapon type variable shows a mix of having more yes property damage and no property damage.  What is interesting though is the insight on which weapons are used more often in 2019 for a terrorist attack.  Overall, weapon five, six, eight, and thirteen make up the majority of weapon types used compared to all the rest.  Some weapon types did not even occur in 2019 such as weapon three and four.  
+
+```{r,echo=TRUE}
+library(ggplot2)
+ggplot(terror2019, aes(x = weaptype1, fill = property)) +
+  geom_bar(position = "dodge", color = "black")+
+  scale_fill_manual(values = c(
+    "1" = "purple",
+    "0" = "red"
+  ))+
+  labs(title = "Count of Property Damage by Weapon Type",
+    x = "Weapon Type",
+    y = "Count of Property Damage",
+    fill = "Property Damage")
+```
+
+The attack type variable shows similar results to the weapon type variable in the sense that some attacks caused more property damage then not.  While some attacks caused more no property damage than actual property damage.  
+
+```{r,echo=TRUE}
+library(ggplot2)
+ggplot(terror2019, aes(x = attacktype1, fill = property)) +
+  geom_bar(position = "dodge", color = "black")+
+  scale_fill_manual(values = c(
+    "1" = "purple",
+    "0" = "red"
+  ))+
+  labs(title = "Count of Property Damage by Attack Type",
+    x = "Attack Type",
+    y = "Count of Property Damage",
+    fill = "Property Damage")
+```
+
+The month of attack variable has pretty similar results across each month.  Some months such as month twelve or month four have a spike in no property damage, while most of the other months have equal amounts of yes property damage and no property damage.
+
+```{r,echo=TRUE}
+library(ggplot2)
+ggplot(terror2019, aes(x = imonth, fill = property)) +
+  geom_bar(position = "dodge", color = "black")+
+  scale_fill_manual(values = c(
+    "1" = "purple",
+    "0" = "red"
+  ))+
+  labs(title = "Count of Property Damage by Month of Attack",
+    x = "Month",
+    y = "Count of Property Damage",
+    fill = "Property Damage")
+```
+
+The region variable shows that some regions have a large amount of both no property damage and yes property damage such as regions six, ten, and eleven.  While the other regions have very little amount of terrorist attacks as a whole such as month four or twelve.
+
+```{r,echo=TRUE}
+library(ggplot2)
+ggplot(terror2019, aes(x = region, fill = property)) +
+  geom_bar(position = "dodge", color = "black")+
+  scale_fill_manual(values = c(
+    "1" = "purple",
+    "0" = "red"
+  ))+
+  labs(title = "Count of Property Damage by Region of Attack",
+    x = "Region",
+    y = "Count of Property Damage",
+    fill = "Property Damage")
+```
+
+## Hypothesis Testing:
+
+The next step of exploratory data analysis used is the hypothesis test on each potential covariate and the dependent variable or property.  Since all the covariates are categorical variable types and property is a categorical variable type a chi squared test of independence can be used for all of them.   Each null hypothesis is that the potential covariate and the property variable are independent of each other.  Each alternative hypothesis is that the potential covariate and the property variable are not independent of each other.  The alpha value that will be accepted is 0.05.
+
+Null Hypothesis: Multiple attacks and property damage are independent
+
+Alternative Hypothesis: Multiple attacks and property damage are not independent
+
+Alpha: 0.05
+
+```{r,echo=TRUE}
+library(ezids)
+contableM = table(terror2019$property, terror2019$multiple)
+xkabledply(contableM, title="Contingency table for property and multiple within dataset")
+chitestM = chisq.test(contableM)
+chitestM
+```
+
+Null Hypothesis: Weapon type and property damage are independent
+
+Alternative Hypothesis: Weapon type and property damage are not independent
+
+Alpha: 0.05
+
+```{r,echo=TRUE}
+library(ezids)
+contableW = table(terror2019$property, terror2019$weaptype1)
+xkabledply(contableW, title="Contingency table for property and weapon type within dataset")
+chitestW = chisq.test(contableW)
+chitestW
+```
+
+Null Hypothesis: Attack type and property damage are independent
+
+Alternative Hypothesis: Attack type and property damage are not independent
+
+Alpha: 0.05
+
+```{r,echo=TRUE}
+library(ezids)
+contableA = table(terror2019$property, terror2019$attacktype1)
+xkabledply(contableA, title="Contingency table for property and attack type within dataset")
+chitestA = chisq.test(contableA)
+chitestA
+```
+
+Null Hypothesis: Month of attack and property damage are independent
+
+Alternative Hypothesis: Month of attack and property damage are not independent
+
+Alpha: 0.05
+
+```{r,echo=TRUE}
+library(ezids)
+contableMO = table(terror2019$property, terror2019$imonth)
+xkabledply(contableMO, title="Contingency table for property and month of attack within dataset")
+chitestMO = chisq.test(contableMO)
+chitestMO
+```
+
+Null Hypothesis: Region of attack and property damage are independent
+
+Alternative Hypothesis: Region of attack and property damage are not independent
+
+Alpha: 0.05
+
+```{r,echo=TRUE}
+library(ezids)
+contableR = table(terror2019$property, terror2019$region)
+xkabledply(contableR, title="Contingency table for property and region of attack within dataset")
+chitestR = chisq.test(contableR)
+chitestR
+```
+Each potential covariate being multiple, weapon type, attack type, region, month have p-values that are less than our set alpha value.  This indicates that for each chi squared test we can reject the null hypotheses, indicating that each potential covariate is not independent of property.
+
+## Logistic Regression Model 1:
+
+### glm(property ~ multiple + attacktype1 + imonth + region + weaptype1, data = terror2019, family = binomial):
+
+```{r,echo=TRUE}
+library(stats)
+model1 = glm(property ~ multiple + attacktype1 + imonth + region + weaptype1, data = terror2019, family = binomial)
+summary(model1)
+```
+
+### Accuracy:
+
+```{r,echo=TRUE}
+probs = predict(model1, type = "response")
+pred = ifelse(probs > 0.5, 1, 0)
+table(Predicted = pred, Actual= terror2019$property)
+mean(pred == terror2019$property)
+```
+
+### ROC and AUC:
+
+```{r,echo=TRUE}
+library(pROC)
+probs = predict(model1, type = "response")
+r = roc(terror2019$property, probs)
+plot(r)
+auc(r)
+best <- coords(r, "best", ret = c("threshold", "sensitivity", "specificity"), best.method = "youden")
+best
+```
+
+### Deviance:
+
+```{r,echo=TRUE}
+p1 = pchisq(8958.7 - 7069.4, df = 40, lower.tail = FALSE)
+p1
+```
+
+The first logistic regression model includes all the variables that could be covariates.  Looking at the coefficients the multiple, attack type, month, and region variables have statistically significance or lower than 0.05 p-values.  Weapon type does not have any statistical significance so it can be removed in the next model.  The accuracy for this model is approximately seventy one percent.  The auc for this model is about seventy eight point five percent.  Thus, this model is looking like it has pretty good results.  However, the deviance for this model is exactly zero.  This represents that this model is a perfect fit, which is never truly the case.  So even though this looked like a good model, it is most likely due to over fitting the data which is causing it to be a perfect model.
+
+## Logistic Regression Model 2:
+
+### glm(property ~ multiple + attacktype1 + imonth, data = terror2019, family = binomial)
+
+```{r,echo=TRUE}
+library(stats)
+model2 = glm(property ~ multiple + attacktype1 + imonth, data = terror2019, family = binomial)
+summary(model2)
+```
+
+### Accuracy:
+
+```{r,echo=TRUE}
+probs1 = predict(model2, type = "response")
+pred1 = ifelse(probs1 > 0.5, 1, 0)
+table(Predicted = pred1, Actual= terror2019$property)
+mean(pred1 == terror2019$property)
+```
+### ROC and AUC
+
+```{r,echo=TRUE}
+library(pROC)
+probs1 = predict(model2, type = "response")
+r = roc(terror2019$property, probs1)
+plot(r)
+auc(r)
+best <- coords(r, "best", ret = c("threshold", "sensitivity", "specificity"), best.method = "youden")
+best
+```
+
+### Deviance:
+
+```{r,echo=TRUE}
+p2 = pchisq(8958.7 - 7616.2, df = 20, lower.tail = FALSE)
+p2
+```
+
+Through different testing of plugging and chugging different sets of independent variables, model two is the one that showed the best results while also not being overfitted with data.  The variables that were chosen to be left in as covariates include multiple, attack type, and month variables.  This produced a model that has an aic of 7658.2, which was lower than any other model that was tested on.  Model two has an accuracy of about sixty seven point two percent.  Model two’s auc is about seventy three percent.  While model two’s deviance is less than 0.05, but not exactly zero indicating that it is statistically better than the null and saturated models and that it is not overfitting the data. 
+
+Looking at each covariate it can be seen that not every type within a covariate is statistically significant.  One example being that attack type three, four, five, six, seven and nine are statistically significant when compared to attack type one.  However, attack type two and eight are not statistically significant compared to attack type one.  Also, only month two, four, and twelve have statistical significance when compared to month one for this logistic regression model.
+
+### Odds Ratio:
+
+```{r,echo=TRUE}
+exp(coef(model2))
+```
+
+Looking at the odds ratios of each coefficient it can be seen that some variables are above one, some below one, and some very close to one.  This indicates for variables like multiple when compared to its reference variable has a sixty six percent increase in odds of property damage happening.  While variables like month three when compared to its reference variable have a twelve percent decrease in odds of property damage happening.  
+
+## Logistic Regression Model 3(Just for comparison):
+
+### glm(property ~ multiple + attacktype1, data = terror2019, family = binomial):
+
+```{r,echo=TRUE}
+library(stats)
+model3 = glm(property ~ multiple + attacktype1, data = terror2019, family = binomial)
+summary(model3)
+```
+
+### Accuracy:
+
+```{r,echo=TRUE}
+probs2 = predict(model3, type = "response")
+pred2 = ifelse(probs2 > 0.5, 1, 0)
+table(Predicted = pred2, Actual= terror2019$property)
+mean(pred2 == terror2019$property)
+```
+
+### ROC and AUC:
+
+```{r,echo=TRUE}
+library(pROC)
+probs2 = predict(model3, type = "response")
+r = roc(terror2019$property, probs2)
+plot(r)
+auc(r)
+best <- coords(r, "best", ret = c("threshold", "sensitivity", "specificity"), best.method = "youden")
+best
+```
+
+### Deviance:
+
+```{r,echo=TRUE}
+p2 = pchisq(8958.7 - 7664.5, df = 11, lower.tail = FALSE)
+p2
+```
+
+The inclusion of this third model is just to give a comparison of why model two was selected as the best model.  Model 2 has a better predictive accuracy than model 3.  Model 2 also has a lower aic than model 3 indicating it is a better model even with model 2 getting penalized for having more independent variables.  Model 2 also has a higher auc than model 3 indicating that model 2 is better at distinguishing the different cases than model 3.
+
+## Conclusion:
+
+To conclude, depending on the number of attacks within one terrorist attack, the type of terrorist attack, and the month in which the terrorist attack occurs can either increase or decrease the odds that your property will have damage after the terrorist attack.  Those three variables are the most influential variables on likelihood of property damage.  So, if for some reason a terrorist attack happened in 2019 and I happened to be there, I would hope that it would be one attack of type six which is a hostage taking or kidnapping, and is in April so that I would have the lowest odds of having damage to my car or house.
+
+
+
+
+
+
